@@ -1,0 +1,94 @@
+import refreshAccessToken from '@/utils/next-auth/refreshToken'
+import NextAuth from 'next-auth/next'
+import Authentik from 'next-auth/providers/authentik'
+
+const handler = NextAuth({
+    providers: [
+        Authentik({
+            clientId: process.env.AUTHENTIK_CLIENT_ID ?? '',
+            clientSecret: process.env.AUTHENTIK_CLIENT_SECRET ?? '',
+            issuer: process.env.AUTHENTIK_ISSUER,
+            authorization: {
+                params: {
+                    scope: 'openid profile email offline_access',
+                },
+            },
+        }),
+    ],
+    session: {
+        strategy: 'jwt',
+        maxAge: 30 * 24 * 60 * 60, // 30 days
+    },
+    secret: process.env.NEXTAUTH_SECRET,
+    callbacks: {
+        async jwt({ token, account }) {
+            if (account) {
+                return {
+                    ...token,
+                    accessToken: account.access_token,
+                    expiresAt: account.expires_at,
+                    refreshToken: account.refresh_token,
+                }
+            } else if (token.expiresAt && Date.now() < token.expiresAt * 1000) {
+                return token
+            } else {
+                if (!token.refreshToken) throw new Error('Missing refreshToken')
+                try {
+                    const newToken = await refreshAccessToken(token)
+                    return newToken
+                } catch (error) {
+                    console.error('Error refreshing access token:', error)
+                }
+                return token
+            }
+        },
+        async session({ session, token }) {
+            session.accessToken = token.accessToken as string
+
+            return session
+        },
+        async signIn({ account, profile }) {
+            try {
+                console.log(account?.access_token)
+                const res = await fetch(
+                    `${process.env.BACKEND_URL}/user/exists`,
+                    {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${account?.access_token}`,
+                        },
+                    }
+                )
+
+                if (res.ok) return true
+
+                if (!res.ok) {
+                    const res = await fetch(
+                        `${process.env.BACKEND_URL}/user/create`,
+                        {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${account?.access_token}`,
+                            },
+                            body: JSON.stringify({
+                                email: profile?.email,
+                                name: profile?.name,
+                            }),
+                        }
+                    )
+                    if (res.ok) return true
+                    return false // verhindert Login
+                }
+
+                return false
+            } catch (error) {
+                console.error('Error:', error)
+                return false
+            }
+        },
+    },
+})
+
+export { handler as GET, handler as POST }
