@@ -15,6 +15,7 @@ import {
     DialogTrigger,
 } from '../ui/dialog'
 import { Button } from '../ui/button'
+import { Label } from '../ui/label'
 
 export default function AllAccount(props: { account: Model }) {
     const { account } = props
@@ -32,13 +33,23 @@ export default function AllAccount(props: { account: Model }) {
                     <DialogTrigger>
                         <IconTrash color="red" />
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
+                    <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>Delete Account</DialogTitle>
+                            <DialogTitle>
+                                {`Delete Account "${account.name}"`}
+                            </DialogTitle>
                             <DialogDescription>
                                 Are you sure you want to delete this account?
                             </DialogDescription>
                         </DialogHeader>
+                        <Label>Name: {account.name}</Label>
+                        <Label>IBAN: {account.iban}</Label>
+                        <Label>Account Type: {account.account_type}</Label>
+                        <Label>Balance: {account.balance} €</Label>
+                        <Label className="text-red-500 font-bold">
+                            This account and all its transactions will be
+                            permanently deleted.
+                        </Label>
                         <DialogFooter>
                             <DialogClose asChild>
                                 <Button variant="outline" type="button">
