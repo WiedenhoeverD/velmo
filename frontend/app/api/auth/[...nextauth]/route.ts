@@ -41,7 +41,8 @@ const handler = NextAuth({
                 )
                 return token
             }
-            if (!token.refreshToken) throw new Error('Missing refreshToken')
+            if (!token.refreshToken)
+                return { ...token, error: 'refresh_access_token_error' }
             try {
                 console.log('renew')
                 const newToken = await refreshAccessToken(token)
@@ -53,9 +54,11 @@ const handler = NextAuth({
                 return newToken
             } catch (error) {
                 console.error('Error refreshing access token:', error)
-                // TODO: cancel login
+                return {
+                    ...token,
+                    error: 'refresh_access_token_error',
+                }
             }
-            return token
         },
         async session({ session, token }) {
             session.accessToken = token.accessToken
@@ -95,7 +98,7 @@ const handler = NextAuth({
                         }
                     )
                     if (res.ok) return true
-                    return false // verhindert Login
+                    return false
                 }
 
                 return false

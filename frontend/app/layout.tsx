@@ -4,6 +4,7 @@ import './globals.css'
 import NextAuthSessionProvider from '@/provider/SessionProvider'
 import { ThemeProvider } from '@/provider/theme-provider'
 import Dashboard from '@/components/dashboard/Dashboard'
+import SessionLogout from '@/provider/SessionLogout'
 
 const geistSans = Geist({
     variable: '--font-geist-sans',
@@ -38,6 +39,7 @@ export default function RootLayout({
                 >
                     <NextAuthSessionProvider>
                         <Dashboard>{children}</Dashboard>
+                        <SessionLogout />
                     </NextAuthSessionProvider>
                 </ThemeProvider>
             </body>
