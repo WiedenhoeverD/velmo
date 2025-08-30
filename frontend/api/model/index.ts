@@ -6,5 +6,8 @@
  * OpenAPI spec version: 1.0
  */
 
+export * from './accounttype'
+export * from './createAccountRequest'
 export * from './createUserRequest'
+export * from './deleteAccountRequest'
 export * from './model'

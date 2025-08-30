@@ -6,7 +6,8 @@ use std::{
 };
 
 use axum::{
-    routing::{get, post},
+    http,
+    routing::{delete, get, post},
     Router,
 };
 use chrono::{DateTime, Utc};
@@ -14,10 +15,11 @@ use dotenvy::dotenv;
 use sea_orm::{Database, DatabaseConnection};
 use serde::{Deserialize, Serialize};
 use tokio::{net::TcpListener, sync::RwLock};
+use tower_http::cors::CorsLayer;
 use utoipa::{OpenApi, ToSchema};
 use utoipa_swagger_ui::SwaggerUi;
 
-use crate::utils::jwks::{fetch_jwks, Jwks, SharedJwks};
+use crate::utils::jwks::{fetch_jwks, SharedJwks};
 
 mod entities;
 mod rest;
@@ -38,7 +40,7 @@ struct Buchung {
 #[derive(Clone)]
 pub struct AppState {
     pub db: DatabaseConnection,
-    pub jwks: Arc<RwLock<Jwks>>,
+    pub jwks: SharedJwks,
 }
 
 #[tokio::main]
@@ -47,6 +49,21 @@ async fn main() -> Result<(), Error> {
     let jwks_url = "https://authentik.hobbylos.org/application/o/velmo/jwks/";
     let jwks = fetch_jwks(jwks_url).await.unwrap();
     let shared_jwks: SharedJwks = Arc::new(RwLock::new(jwks));
+
+    let cors = CorsLayer::new()
+        .allow_origin(
+            "http://localhost:3000"
+                .parse::<http::HeaderValue>()
+                .unwrap(),
+        )
+        .allow_methods([
+            http::Method::GET,
+            http::Method::POST,
+            http::Method::PUT,
+            http::Method::DELETE,
+            http::Method::OPTIONS,
+        ])
+        .allow_headers([http::header::CONTENT_TYPE, http::header::AUTHORIZATION]);
 
     #[derive(OpenApi)]
     #[openapi(
@@ -57,6 +74,9 @@ async fn main() -> Result<(), Error> {
     paths(
         rest::user::create::user_create,
         rest::user::exists::user_exists,
+        rest::accounts::all::accounts_all,
+        rest::accounts::create::account_create,
+        rest::accounts::delete::account_delete
     ),
     components(),
     security(
@@ -73,11 +93,22 @@ async fn main() -> Result<(), Error> {
         db: db.clone(),
         jwks: shared_jwks.clone(),
     };
+
     let app = Router::new()
         .route("/user/exists", get(rest::user::exists::user_exists))
         .route("/user/create", post(rest::user::create::user_create))
+        .route("/accounts", get(rest::accounts::all::accounts_all))
+        .route(
+            "/accounts/create",
+            post(rest::accounts::create::account_create),
+        )
+        .route(
+            "/accounts/delete/{account_id}",
+            delete(rest::accounts::delete::account_delete),
+        )
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
-        .with_state(state);
+        .with_state(state)
+        .layer(cors);
 
     let listener = TcpListener::bind(SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 8080))
         .await

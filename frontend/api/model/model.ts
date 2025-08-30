@@ -5,9 +5,13 @@
  * Backend API for Velmo
  * OpenAPI spec version: 1.0
  */
+import type { Accounttype } from './accounttype'
 
 export interface Model {
-    email: string
+    account_type: Accounttype
+    balance: number
+    iban: string
     id: string
     name: string
+    user_id: string
 }

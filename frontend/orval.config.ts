@@ -3,7 +3,7 @@ export default {
     api: {
         output: {
             target: './api/generated.ts',
-            client: 'axios',
+            client: 'swr',
             prettier: true,
             override: {
                 mutator: {

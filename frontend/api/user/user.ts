@@ -5,27 +5,90 @@
  * Backend API for Velmo
  * OpenAPI spec version: 1.0
  */
+import useSwr from 'swr'
+import type { Key, SWRConfiguration } from 'swr'
+
+import useSWRMutation from 'swr/mutation'
+import type { SWRMutationConfiguration } from 'swr/mutation'
+
 import type { CreateUserRequest, Model } from '.././model'
 
 import { customAxios } from '.././axiosInstance'
 
-export const getUser = () => {
-    const userCreate = (createUserRequest: CreateUserRequest) => {
-        return customAxios<Model>({
-            url: `/user/create`,
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            data: createUserRequest,
-        })
-    }
-    const userExists = () => {
-        return customAxios<Model>({ url: `/user/exists`, method: 'GET' })
-    }
-    return { userCreate, userExists }
+export const userCreate = (createUserRequest: CreateUserRequest) => {
+    return customAxios<Model>({
+        url: `/user/create`,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        data: createUserRequest,
+    })
 }
-export type UserCreateResult = NonNullable<
-    Awaited<ReturnType<ReturnType<typeof getUser>['userCreate']>>
+
+export const getUserCreateMutationFetcher = () => {
+    return (_: Key, { arg }: { arg: CreateUserRequest }): Promise<Model> => {
+        return userCreate(arg)
+    }
+}
+export const getUserCreateMutationKey = () => [`/user/create`] as const
+
+export type UserCreateMutationResult = NonNullable<
+    Awaited<ReturnType<typeof userCreate>>
 >
-export type UserExistsResult = NonNullable<
-    Awaited<ReturnType<ReturnType<typeof getUser>['userExists']>>
+export type UserCreateMutationError = string | string
+
+export const useUserCreate = <TError = string | string>(options?: {
+    swr?: SWRMutationConfiguration<
+        Awaited<ReturnType<typeof userCreate>>,
+        TError,
+        Key,
+        CreateUserRequest,
+        Awaited<ReturnType<typeof userCreate>>
+    > & { swrKey?: string }
+}) => {
+    const { swr: swrOptions } = options ?? {}
+
+    const swrKey = swrOptions?.swrKey ?? getUserCreateMutationKey()
+    const swrFn = getUserCreateMutationFetcher()
+
+    const query = useSWRMutation(swrKey, swrFn, swrOptions)
+
+    return {
+        swrKey,
+        ...query,
+    }
+}
+export const userExists = () => {
+    return customAxios<Model>({ url: `/user/exists`, method: 'GET' })
+}
+
+export const getUserExistsKey = () => [`/user/exists`] as const
+
+export type UserExistsQueryResult = NonNullable<
+    Awaited<ReturnType<typeof userExists>>
 >
+export type UserExistsQueryError = string | string
+
+export const useUserExists = <TError = string | string>(options?: {
+    swr?: SWRConfiguration<Awaited<ReturnType<typeof userExists>>, TError> & {
+        swrKey?: Key
+        enabled?: boolean
+    }
+}) => {
+    const { swr: swrOptions } = options ?? {}
+
+    const isEnabled = swrOptions?.enabled !== false
+    const swrKey =
+        swrOptions?.swrKey ?? (() => (isEnabled ? getUserExistsKey() : null))
+    const swrFn = () => userExists()
+
+    const query = useSwr<Awaited<ReturnType<typeof swrFn>>, TError>(
+        swrKey,
+        swrFn,
+        swrOptions
+    )
+
+    return {
+        swrKey,
+        ...query,
+    }
+}

@@ -1,6 +1,6 @@
 import { JWT } from 'next-auth/jwt'
 
-export default async function refreshAccessToken(token: JWT) {
+export default async function refreshAccessToken(token: JWT): Promise<JWT> {
     try {
         const url = `${process.env.AUTHENTIK_URL}/application/o/token/`
         const response = await fetch(url, {
@@ -19,6 +19,9 @@ export default async function refreshAccessToken(token: JWT) {
         const refreshedTokens = await response.json()
 
         if (!response.ok) throw refreshedTokens
+        console.log('OldToken', token.refreshToken)
+        console.log('NewToken', refreshedTokens.refresh_token)
+        console.log('Time left', refreshedTokens.expires_in, 'seconds')
 
         return {
             ...token,

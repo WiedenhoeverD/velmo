@@ -27,7 +27,7 @@ pub struct CreateUserRequest {
         ("bearer_auth" = [])
     )
 )]
-#[axum::debug_handler]
+
 pub async fn user_create(
     State(state): State<AppState>,
     user: AuthenticatedUser,

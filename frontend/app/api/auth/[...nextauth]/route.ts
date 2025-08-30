@@ -21,35 +21,51 @@ const handler = NextAuth({
     },
     secret: process.env.NEXTAUTH_SECRET,
     callbacks: {
-        async jwt({ token, account }) {
-            if (account) {
+        async jwt({ token, account, user }) {
+            if (account && user) {
                 return {
                     ...token,
                     accessToken: account.access_token,
-                    expiresAt: account.expires_at,
+                    accessTokenExpires: (account.expires_at as number) * 1000,
                     refreshToken: account.refresh_token,
                 }
-            } else if (token.expiresAt && Date.now() < token.expiresAt * 1000) {
-                return token
-            } else {
-                if (!token.refreshToken) throw new Error('Missing refreshToken')
-                try {
-                    const newToken = await refreshAccessToken(token)
-                    return newToken
-                } catch (error) {
-                    console.error('Error refreshing access token:', error)
-                }
+            }
+            if (
+                token.accessTokenExpires &&
+                Date.now() < token.accessTokenExpires
+            ) {
+                console.log(
+                    'Access token is still valid for',
+                    (token.accessTokenExpires - Date.now()) / 1000,
+                    'seconds'
+                )
                 return token
             }
+            if (!token.refreshToken) throw new Error('Missing refreshToken')
+            try {
+                console.log('renew')
+                const newToken = await refreshAccessToken(token)
+                console.log(
+                    'Access token is still valid for',
+                    (newToken.accessTokenExpires ?? 0 - Date.now()) / 1000,
+                    'seconds'
+                )
+                return newToken
+            } catch (error) {
+                console.error('Error refreshing access token:', error)
+                // TODO: cancel login
+            }
+            return token
         },
         async session({ session, token }) {
-            session.accessToken = token.accessToken as string
+            session.accessToken = token.accessToken
+            session.accessTokenExpires = token.accessTokenExpires
+            session.error = token.error
 
             return session
         },
         async signIn({ account, profile }) {
             try {
-                console.log(account?.access_token)
                 const res = await fetch(
                     `${process.env.BACKEND_URL}/user/exists`,
                     {

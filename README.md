@@ -9,6 +9,7 @@ edit the postgres login inside sea-orm.sh
 ## setup
 1. Start DB (Docker compose)
 2. Sea-orm types -> run sea-orm.sh
+3. frontend types -> run npx orval
 
 # env
 ## backend

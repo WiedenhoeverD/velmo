@@ -6,7 +6,7 @@ export const customAxios = async <T>(
 ): Promise<T> => {
     const session = await getSession()
     const instance = axios.create({
-        baseURL: process.env.BACKEND_URL ?? '',
+        baseURL: 'http://localhost:8080',
         headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${session?.accessToken ?? ''}`,
