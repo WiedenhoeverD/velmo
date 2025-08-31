@@ -46,8 +46,8 @@ pub struct AppState {
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     dotenv().ok();
-    let jwks_url = "https://authentik.hobbylos.org/application/o/velmo/jwks/";
-    let jwks = fetch_jwks(jwks_url).await.unwrap();
+    let jwks_url = env::var("AUTHENTIK_JWKS_URL").unwrap();
+    let jwks = fetch_jwks(jwks_url.as_str()).await.unwrap();
     let shared_jwks: SharedJwks = Arc::new(RwLock::new(jwks));
 
     let cors = CorsLayer::new()

@@ -16,6 +16,7 @@ edit the postgres login inside sea-orm.sh
 ```
 AUTHENTIK_CLIENT_ID=
 POSTGRES_URL=
+AUTHENTIK_JWKS_URL=
 ```
 ## frontend
 ```
