@@ -11,10 +11,7 @@ export default function SessionLogout() {
     useEffect(() => {
         console.log('Session data:', sessionData)
         // check if the error has occurred
-        if (
-            sessionData &&
-            sessionData?.error === 'refresh_access_token_error'
-        ) {
+        if (sessionData && sessionData?.error === 'RefreshAccessTokenError') {
             signOut()
         }
     }, [sessionData, router])
